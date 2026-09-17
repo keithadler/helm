@@ -107,6 +107,11 @@ void UpdateCheckSection::mouseUp(const MouseEvent &e) {
 }
 
 void UpdateCheckSection::checkUpdate() {
+  // The original asked tytel.org for the latest version on every start. This revival is not
+  // published there, and a synth has no business phoning anywhere on its own, so the check is
+  // off; the section stays for the day it can point at this project's releases.
+  return;
+
   static const int TIMEOUT = 200;
   URL version_url("http://tytel.org/static/dist/helm_version.txt");
   const std::unique_ptr<InputStream> in(version_url.createInputStream(
