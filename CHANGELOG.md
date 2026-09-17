@@ -2,7 +2,7 @@
 
 The original Debian-format history is in `changelog`.
 
-## Unreleased
+## 1.0.0 (2026-09-17)
 
 The revival release. Same synth, new build, new formats.
 
