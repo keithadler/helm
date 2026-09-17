@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            validator: ubuntu
+          - name: macOS
+            os: macos-latest
+            validator: macos-universal
+          - name: Windows
+            os: windows-latest
+            validator: windows
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies (what JUCE needs for audio, MIDI, windows and OpenGL)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libjack-jackd2-dev libx11-dev libxext-dev libxinerama-dev \
+            libxcursor-dev libxrandr-dev libfreetype-dev libfontconfig1-dev libgl1-mesa-dev lv2-dev lilv-utils
+
+      - name: Set up the MSVC environment
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.os == 'windows-latest' && '-G Ninja' || '' }} ${{ matrix.os == 'macos-latest' && '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"' || '' }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Check the LV2 bundle with lilv-utils
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          LV2_PATH=$PWD/build/Helm_artefacts/Release/LV2 lv2ls | grep -q tytel.org/helm
+          LV2_PATH=$PWD/build/Helm_artefacts/Release/LV2 lv2info http://tytel.org/helm | head -20
+
+      - name: Validate with clap-validator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download 0.4.1 --repo free-audio/clap-validator --pattern "*${{ matrix.validator }}*" --dir validator
+          cd validator
+          for z in *.zip; do unzip -o -q "$z"; done
+          for t in $(find . -name '*.tar.gz'); do tar xzf "$t" -C "$(dirname "$t")"; done
+          V=$(find . -type f \( -name clap-validator -o -name clap-validator.exe \) | head -1)
+          chmod +x "$V"
+          cd ..
+          "validator/$V" validate --only-failed "$(find build/Helm_artefacts -name 'Helm.clap' | head -1)"
+
+      - name: Validate the Audio Unit with auval
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          cp -R build/Helm_artefacts/Release/AU/Helm.component ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar || true
+          auval -v aumu Helm Tyte
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-${{ matrix.name }}
+          path: |
+            build/Helm_artefacts/Release
+            build/HelmStandalone_artefacts/Release
+          if-no-files-found: ignore
