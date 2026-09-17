@@ -44,6 +44,11 @@ class ValueBridge : public AudioProcessorParameter {
       if (listener_ && !source_changed_) {
         source_changed_ = true;
         mopo::mopo_float synth_value = convertToSynthValue(value);
+        // The listener queues the change for the audio thread. Set the control now as well, so a
+        // host that sets a parameter and reads it back before the next process call (a CLAP flush,
+        // an offline automation pass) sees the value it set. MIDI learn already writes the control
+        // from outside the audio thread the same way.
+        value_->set(synth_value);
         listener_->parameterChanged(name_.toStdString(), synth_value);
         source_changed_ = false;
       }

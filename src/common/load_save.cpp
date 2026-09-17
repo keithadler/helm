@@ -695,7 +695,26 @@ std::pair<wchar_t, wchar_t> LoadSave::getComputerKeyboardOctaveControls() {
   return octave_controls;
 }
 
+// A "patches" folder shipped next to the binary: beside Helm.app, Helm.exe or Helm, or beside
+// a plugin bundle in whatever folder it was unzipped to. That makes a download work without an
+// installer. Walks up from the executable, since on macOS and for the plugins the executable
+// sits several levels inside a bundle.
+static File findPortablePatches() {
+  File dir = File::getSpecialLocation(File::currentExecutableFile).getParentDirectory();
+  for (int level = 0; level < 6 && dir.exists(); ++level) {
+    File candidate = dir.getChildFile("patches");
+    if (candidate.getChildFile("Factory Presets").isDirectory())
+      return candidate;
+    dir = dir.getParentDirectory();
+  }
+  return File();
+}
+
 File LoadSave::getFactoryBankDirectory() {
+  File portable = findPortablePatches();
+  if (portable.exists())
+    return portable;
+
   File patch_dir = File("");
 #ifdef LINUX
   patch_dir = File(LINUX_FACTORY_PATCH_DIRECTORY);

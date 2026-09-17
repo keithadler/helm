@@ -29,10 +29,10 @@ FetchContent_Declare(juce
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(juce)
 if(HELM_BUILD_PLUGINS)
+    # No tag of clap-juce-extensions supports JUCE 8 (0.26.0 is from 2022); main does, so a commit is pinned.
     FetchContent_Declare(clap-juce-extensions
         GIT_REPOSITORY https://github.com/free-audio/clap-juce-extensions.git
-        GIT_TAG        0.26.0
-        GIT_SHALLOW    TRUE)
+        GIT_TAG        55525c9)
     FetchContent_MakeAvailable(clap-juce-extensions)
 endif()
 
@@ -137,3 +137,12 @@ if(HELM_BUILD_STANDALONE)
     target_include_directories(HelmStandalone PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/standalone)
     target_compile_definitions(HelmStandalone PRIVATE JUCE_APPLICATION_NAME_STRING="Helm" JUCE_APPLICATION_VERSION_STRING="${PROJECT_VERSION}")
 endif()
+
+# ---- tests: headless, no window, no audio device ----
+if(HELM_BUILD_TESTS)
+    enable_testing()
+    juce_add_console_app(helm_engine_test PRODUCT_NAME "helm_engine_test")
+    helm_configure_target(helm_engine_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/engine_test.cpp)
+    add_test(NAME engine COMMAND helm_engine_test ${CMAKE_CURRENT_SOURCE_DIR}/patches)
+endif()
+
