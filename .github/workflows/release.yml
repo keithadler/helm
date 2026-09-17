@@ -63,7 +63,7 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DHELM_BUILD_TESTS=OFF ${{ matrix.family == 'windows' && '-G Ninja' || '' }} ${{ matrix.family == 'macos' && '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"' || '' }}
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build --config Release --parallel 4
 
       - name: Package
         run: |

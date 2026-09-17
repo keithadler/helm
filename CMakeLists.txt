@@ -77,7 +77,7 @@ function(helm_configure_target target)
     target_include_directories(${target} PRIVATE ${HELM_INCLUDE_DIRS})
     target_compile_definitions(${target} PRIVATE ${HELM_JUCE_DEFINES})
     target_link_libraries(${target} PRIVATE HelmData ${HELM_JUCE_MODULES}
-        PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags)
+        PUBLIC juce::juce_recommended_config_flags)
     # The sources include the jucer-era umbrella header; JUCE writes one per target.
     juce_generate_juce_header(${target})
     if(NOT MSVC)
