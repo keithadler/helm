@@ -701,7 +701,7 @@ std::pair<wchar_t, wchar_t> LoadSave::getComputerKeyboardOctaveControls() {
 // sits several levels inside a bundle.
 static File findPortablePatches() {
   File dir = File::getSpecialLocation(File::currentExecutableFile).getParentDirectory();
-  for (int level = 0; level < 6 && dir.exists(); ++level) {
+  for (int level = 0; level < 8 && dir.exists(); ++level) {
     File candidate = dir.getChildFile("patches");
     if (candidate.getChildFile("Factory Presets").isDirectory())
       return candidate;
@@ -730,9 +730,6 @@ File LoadSave::getFactoryBankDirectory() {
 }
 
 File LoadSave::getBankDirectory() {
-  if (!isInstalled())
-    return File("../../../patches");
-
   File patch_dir = File("");
 #ifdef LINUX
   patch_dir = File(LINUX_BANK_DIRECTORY);
