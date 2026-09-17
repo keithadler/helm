@@ -46,12 +46,10 @@ HelmEditor::HelmEditor(bool use_gui) : SynthGuiInterface(this, use_gui) {
     }
   }
 
-  const StringArray all_midi_ins(MidiInput::getDevices());
+  for (const MidiDeviceInfo& device : MidiInput::getAvailableDevices())
+    deviceManager.setMidiInputDeviceEnabled(device.identifier, true);
 
-  for (int i = 0; i < all_midi_ins.size(); ++i)
-    deviceManager.setMidiInputEnabled(all_midi_ins[i], true);
-
-  deviceManager.addMidiInputCallback("", midi_manager_);
+  deviceManager.addMidiInputDeviceCallback({}, midi_manager_);
 
   if (use_gui) {
     setLookAndFeel(DefaultLookAndFeel::instance());

@@ -244,13 +244,11 @@ void SynthBase::processAudio(AudioSampleBuffer* buffer, int channels, int sample
 }
 
 void SynthBase::processMidi(MidiBuffer& midi_messages, int start_sample, int end_sample) {
-  MidiBuffer::Iterator midi_iter(midi_messages);
-  MidiMessage midi_message;
-  int midi_sample = 0;
   bool process_all = end_sample == 0;
-  while (midi_iter.getNextEvent(midi_message, midi_sample)) {
+  for (const MidiMessageMetadata metadata : midi_messages) {
+    int midi_sample = metadata.samplePosition;
     if (process_all || (midi_sample >= start_sample && midi_sample < end_sample))
-      midi_manager_->processMidiMessage(midi_message, midi_sample - start_sample);
+      midi_manager_->processMidiMessage(metadata.getMessage(), midi_sample - start_sample);
   }
 }
 

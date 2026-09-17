@@ -99,7 +99,7 @@ void LoadSave::loadControls(SynthBase* synth,
 void LoadSave::loadModulations(SynthBase* synth,
                                const Array<var>* modulations) {
   synth->clearModulations();
-  var* modulation = modulations->begin();
+  const var* modulation = modulations->begin();
 
   for (; modulation != modulations->end(); ++modulation) {
     DynamicObject* mod = modulation->getDynamicObject();
@@ -173,7 +173,7 @@ void LoadSave::varToState(SynthBase* synth,
     }
 
     // Fix modulation routing.
-    var* modulation = modulations->begin();
+    const var* modulation = modulations->begin();
     Array<var> old_modulations;
     Array<DynamicObject*> new_modulations;
     for (; modulation != modulations->end(); ++modulation) {
@@ -280,7 +280,7 @@ void LoadSave::varToState(SynthBase* synth,
     }
 
     // Move modulating saturation to distortion.
-    var* modulation = modulations->begin();
+    const var* modulation = modulations->begin();
     for (; modulation != modulations->end(); ++modulation) {
       DynamicObject* mod = modulation->getDynamicObject();
       String destination = mod->getProperty("destination").toString();
@@ -536,7 +536,7 @@ void LoadSave::loadConfig(MidiManager* midi_manager, mopo::StringLayout* layout)
     MidiManager::midi_map midi_learn_map = midi_manager->getMidiLearnMap();
 
     Array<var>* midi_learn = config_properties["midi_learn"].getArray();
-    var* midi_source = midi_learn->begin();
+    const var* midi_source = midi_learn->begin();
 
     for (; midi_source != midi_learn->end(); ++midi_source) {
       DynamicObject* source_object = midi_source->getDynamicObject();
@@ -544,7 +544,7 @@ void LoadSave::loadConfig(MidiManager* midi_manager, mopo::StringLayout* layout)
 
       if (source_object->hasProperty("destinations")) {
         Array<var>* destinations = source_object->getProperty("destinations").getArray();
-        var* midi_destination = destinations->begin();
+        const var* midi_destination = destinations->begin();
 
         for (; midi_destination != destinations->end(); ++midi_destination) {
           DynamicObject* destination_object = midi_destination->getDynamicObject();
