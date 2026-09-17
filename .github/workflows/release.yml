@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  # A manual run builds and packages every platform and keeps the packages as workflow
+  # artifacts instead of uploading them to a release: a dry run for a new runner or toolchain.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            family: linux
+          - name: linux-aarch64
+            os: ubuntu-24.04-arm
+            family: linux
+          - name: macos-universal
+            os: macos-latest
+            family: macos
+          - name: windows-x86_64
+            os: windows-latest
+            family: windows
+            msvc_arch: x64
+          - name: windows-arm64
+            os: windows-11-arm
+            family: windows
+            msvc_arch: arm64
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies (what JUCE needs for audio, MIDI, windows and OpenGL)
+        if: matrix.family == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libjack-jackd2-dev libx11-dev libxext-dev libxinerama-dev \
+            libxcursor-dev libxrandr-dev libfreetype-dev libfontconfig1-dev libgl1-mesa-dev lv2-dev
+
+      # MSVC with the C++ runtime linked statically (CMakeLists.txt), so the zip needs no redistributable.
+      - name: Set up the MSVC environment
+        if: matrix.family == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc_arch }}
+
+      - name: Ninja, if the runner image lacks it
+        if: matrix.family == 'windows'
+        run: command -v ninja || pip install ninja
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DHELM_BUILD_TESTS=OFF ${{ matrix.family == 'windows' && '-G Ninja' || '' }} ${{ matrix.family == 'macos' && '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"' || '' }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          PKG=helm-$VERSION-${{ matrix.name }}
+          mkdir -p $PKG
+          A=build/Helm_artefacts/Release
+          S=build/HelmStandalone_artefacts/Release
+          cp -R $A/VST3/Helm.vst3 $PKG/
+          cp -R $A/CLAP/Helm.clap $PKG/
+          cp -R $A/LV2/Helm.lv2 $PKG/
+          [ -d $A/AU/Helm.component ] && cp -R $A/AU/Helm.component $PKG/ || true
+          # the standalone: Helm.app (macOS), Helm (Linux), Helm.exe (Windows)
+          [ -d $S/Helm.app ] && cp -R $S/Helm.app $PKG/ || true
+          [ -f $S/Helm ] && cp $S/Helm $PKG/ || true
+          [ -f $S/Helm.exe ] && cp $S/Helm.exe $PKG/ || true
+          cp -R patches $PKG/patches
+          cp README.md CHANGELOG.md COPYING $PKG/
+          if [ "${{ matrix.family }}" = "linux" ]; then
+            tar czf $PKG.tar.gz $PKG
+          elif [ "${{ matrix.family }}" = "windows" ]; then
+            7z a -tzip -bd -bso0 $PKG.zip $PKG
+          else
+            zip -r -q $PKG.zip $PKG
+          fi
+          ls -la
+
+      - name: Keep the package as an artifact (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            *.tar.gz
+            *.zip
+
+      - name: Upload to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for f in helm-*.tar.gz helm-*.zip; do
+            if [ -f "$f" ]; then gh release upload "$GITHUB_REF_NAME" "$f" --clobber; fi
+          done
