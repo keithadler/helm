@@ -127,9 +127,7 @@ void HelmPlugin::setCurrentProgram(int index) {
   if (all_patches_.size() > index) {
     current_program_ = index;
     LoadSave::loadPatchFile(all_patches_[current_program_], this, save_info_);
-    SynthGuiInterface* editor = getGuiInterface();
-    if (editor)
-      editor->updateFullGui();
+    refreshGui();
   }
 }
 
@@ -217,8 +215,19 @@ void HelmPlugin::setStateInformation(const void* data, int size_in_bytes) {
   String data_string = stream.readEntireStreamAsString();
   var state;
   if (JSON::parse(data_string, state).wasOk())
-    LoadSave::varToState(this, save_info_, state);
+    loadFromVar(state);            // under the audio lock, with stale queued changes dropped
 
+  refreshGui();
+}
+
+void HelmPlugin::refreshGui() {
+  if (MessageManager::getInstance()->isThisTheMessageThread())
+    handleAsyncUpdate();
+  else
+    triggerAsyncUpdate();
+}
+
+void HelmPlugin::handleAsyncUpdate() {
   SynthGuiInterface* editor = getGuiInterface();
   if (editor)
     editor->updateFullGui();

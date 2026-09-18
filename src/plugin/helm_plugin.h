@@ -24,7 +24,8 @@
 
 class ValueBridge;
 
-class HelmPlugin : public SynthBase, public AudioProcessor, public ValueBridge::Listener {
+class HelmPlugin : public SynthBase, public AudioProcessor, public ValueBridge::Listener,
+                   private AsyncUpdater {
   public:
     HelmPlugin();
     virtual ~HelmPlugin();
@@ -71,6 +72,11 @@ class HelmPlugin : public SynthBase, public AudioProcessor, public ValueBridge::
     void loadPatches();
 
   private:
+    // Hosts may restore state or change program on any thread; the sliders live on the message
+    // thread. Update them there, right away if that is where we are, otherwise on the next pass.
+    void refreshGui();
+    void handleAsyncUpdate() override;
+
     uint32 set_state_time_;
 
     int current_program_;

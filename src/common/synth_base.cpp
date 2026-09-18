@@ -157,6 +157,15 @@ void SynthBase::loadInitPatch() {
 
 void SynthBase::loadFromVar(juce::var state) {
   getCriticalSection().enter();
+
+  // Changes still queued for the audio thread predate this state. Applied after it, they would
+  // undo part of it (a parameter set just before a preset load came back as the old value), so
+  // drop them: the state carries the values that count.
+  mopo::control_change control;
+  while (value_change_queue_.try_dequeue(control)) { }
+  mopo::modulation_change modulation;
+  while (modulation_change_queue_.try_dequeue(modulation)) { }
+
   LoadSave::varToState(this, save_info_, state);
   getCriticalSection().exit();
 }
