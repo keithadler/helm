@@ -1,5 +1,9 @@
 # Helm
 
+[![CI](https://github.com/keithadler/helm/actions/workflows/ci.yml/badge.svg)](https://github.com/keithadler/helm/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/keithadler/helm?sort=semver)](https://github.com/keithadler/helm/releases/latest)
+[![License](https://img.shields.io/github/license/keithadler/helm)](https://github.com/keithadler/helm/blob/master/COPYING)
+
 **A free polyphonic synthesizer with lots of modulation, by Matt Tytel.** Two oscillators
 with cross modulation and up to fifteen unison voices each, a sub oscillator with shuffle
 waveshaping, blendable 12 and 24 dB filters, three LFOs, a step sequencer, a modulation
