@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(Helm
-    VERSION 1.0.1
+    VERSION 1.0.2
     DESCRIPTION "A free polyphonic synthesizer with lots of modulation"
     HOMEPAGE_URL "https://github.com/keithadler/helm"
     LANGUAGES C CXX)

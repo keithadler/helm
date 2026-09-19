@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.2 (2026-09-19)
+
+### Fixed
+- **Heap corruption that could crash the plugin.** When the engine removed a processor that
+  was not in its router's lists, it erased a range starting at the end of the vector, which
+  walks off the buffer. The assert that was meant to catch it is compiled out of a release
+  build, so the shipped plugin corrupted memory instead. Reached in practice through
+  modulation being disconnected while audio was processing, and it crashed in whatever ran
+  next, which is why it looked like a different bug each time. All four places that did this
+  now check before erasing. Found with pluginval at strictness 10 with the tests in random
+  order, then pinned down with Guard Malloc; before the fix the run died two thirds of the
+  way through, after it all 91 tests complete.
+
+### Known
+- pluginval's parameter restoration test still reports `amp_attack` not restored. That is not
+  a state bug: the host changes program during the test, and a program change in Helm loads a
+  factory patch, which overwrites every parameter including that one. Whether the 274 factory
+  patches should keep being offered to the host as programs is a design question, not a fix.
+
 ## 1.0.1 (2026-09-17)
 
 ### Fixed

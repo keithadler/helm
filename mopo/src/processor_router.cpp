@@ -155,13 +155,18 @@ namespace mopo {
     local_changes_++;
     std::vector<const Processor*>::iterator pos =
         std::find(global_order_->begin(), global_order_->end(), processor);
+    /* Erasing at end() walks off the buffer, and MOPO_ASSERT is compiled out of a
+     * release build, so a processor that is not in the list has to be checked for
+     * rather than asserted about. */
     MOPO_ASSERT(pos != global_order_->end());
-    global_order_->erase(pos, pos + 1);
+    if (pos != global_order_->end())
+      global_order_->erase(pos);
 
     std::vector<Processor*>::iterator local_pos =
         std::find(local_order_.begin(), local_order_.end(), processor);
     MOPO_ASSERT(local_pos != local_order_.end());
-    local_order_.erase(local_pos, local_pos + 1);
+    if (local_pos != local_order_.end())
+      local_order_.erase(local_pos);
 
     processors_.erase(processor);
   }
@@ -296,13 +301,15 @@ namespace mopo {
         std::find(global_feedback_order_->begin(),
                   global_feedback_order_->end(), feedback);
     MOPO_ASSERT(pos != global_feedback_order_->end());
-    global_feedback_order_->erase(pos, pos + 1);
+    if (pos != global_feedback_order_->end())
+      global_feedback_order_->erase(pos);
 
     std::vector<Feedback*>::iterator local_pos =
         std::find(local_feedback_order_.begin(),
                   local_feedback_order_.end(), feedback);
     MOPO_ASSERT(local_pos != local_feedback_order_.end());
-    local_feedback_order_.erase(local_pos, local_pos + 1);
+    if (local_pos != local_feedback_order_.end())
+      local_feedback_order_.erase(local_pos);
 
     feedback_processors_.erase(feedback);
   }

@@ -77,14 +77,36 @@ int main(int argc, char** argv) {
     std::printf("      rms %.4f over %zu samples\n", note.rms, note.left.size());
   }
 
-  // 2. the same note renders the same samples twice
+  // 2. modulation can be connected and disconnected repeatedly, including
+  //    disconnecting one that is already gone, and the synth keeps working.
+  //    This does NOT reproduce the heap corruption fixed in 1.0.2: that needed
+  //    ProcessorRouter::removeProcessor to be called for a processor missing
+  //    from the router's lists, which this path does not manage to do. The
+  //    reproducer for that is pluginval at strictness 10:
+  //      pluginval --strictness-level 10 --repeat 4 --randomise \
+  //                --random-seed 0x5552bc5 --validate Helm.vst3
+  {
+    HeadlessSynth synth;
+    for (int i = 0; i < 100; ++i) {
+      synth.changeModulationAmount("lfo_1", "amp_attack", 0.5);
+      render(synth, 2, 256, false);
+      synth.changeModulationAmount("lfo_1", "amp_attack", 0.0);
+      render(synth, 2, 256, false);
+      synth.changeModulationAmount("lfo_1", "amp_attack", 0.0);   // already gone
+      render(synth, 2, 256, false);
+    }
+    Rendered after = render(synth, 20, 256, true);
+    check(after.finite, "the synth still renders after modulation churn");
+  }
+
+  // 3. the same note renders the same samples twice
   {
     HeadlessSynth a, b;
     Rendered ra = render(a, 20, 256, true), rb = render(b, 20, 256, true);
     check(ra.left == rb.left, "rendering is deterministic");
   }
 
-  // 3. every factory patch loads and renders a finite block
+  // 4. every factory patch loads and renders a finite block
   if (patches.isDirectory()) {
     Array<File> files;
     patches.findChildFiles(files, File::findFiles, true, String("*.") + mopo::PATCH_EXTENSION);
